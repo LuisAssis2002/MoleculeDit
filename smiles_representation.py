@@ -5,17 +5,30 @@ import math
 class SmilesTokenizer:
     """
     Classe para tokenizar e de-tokenizar strings SMILES.
+    Versão 3.0: Constrói o vocabulário dinamicamente a partir dos dados.
     """
     def __init__(self):
-        # O vocabulário inclui todos os caracteres possíveis, mais tokens especiais
-        chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#%^&*()[]{}'\"/\\.=+-<>"
+        self.vocab = []
+        self.char_to_idx = {}
+        self.idx_to_char = {}
+        self.vocab_size = 0
+
+    def fit_on_smiles_list(self, smiles_list):
+        """
+        Constrói o vocabulário a partir de uma lista de todas as strings SMILES do dataset.
+        """
+        all_chars = set()
+        for smiles in smiles_list:
+            all_chars.update(list(smiles))
+        
         special_tokens = ["<pad>", "<start>", "<end>"]
-        self.vocab = special_tokens + sorted(list(set(chars)))
+        self.vocab = special_tokens + sorted(list(all_chars))
         
         self.char_to_idx = {char: i for i, char in enumerate(self.vocab)}
         self.idx_to_char = {i: char for i, char in enumerate(self.vocab)}
         
         self.vocab_size = len(self.vocab)
+        print(f"Vocabulário construído com {self.vocab_size} tokens a partir dos dados.")
 
     def encode(self, smiles):
         """Converte uma string SMILES numa lista de tokens inteiros."""
@@ -25,28 +38,19 @@ class SmilesTokenizer:
         return tokens
 
     def decode(self, tokens):
-        """
-        Converte uma lista/array de tokens inteiros de volta para uma string SMILES.
-        --- FUNÇÃO CORRIGIDA ---
-        """
+        """Converte uma lista/array de tokens inteiros de volta para uma string SMILES."""
         chars = []
         for token_idx in tokens:
-            char = self.idx_to_char.get(int(token_idx)) # Garantir que o índice é int
-            
-            # Parar se encontrarmos o fim da sequência
-            if char == '<end>':
+            char = self.idx_to_char.get(int(token_idx))
+            if char == '<end>' or char == '<pad>':
                 break
-            
-            # Ignorar tokens especiais que não fazem parte do SMILES
-            if char not in ['<pad>', '<start>']:
+            if char != '<start>':
                 chars.append(char)
         return "".join(chars)
 
 
 class PositionalEncoding(nn.Module):
-    """
-    Adiciona informação posicional aos embeddings dos tokens.
-    """
+    """Adiciona informação posicional aos embeddings dos tokens."""
     def __init__(self, d_model, max_len=500):
         super().__init__()
         position = torch.arange(max_len).unsqueeze(1)
@@ -57,15 +61,11 @@ class PositionalEncoding(nn.Module):
         self.register_buffer('pe', pe)
 
     def forward(self, x):
-        # x tem a forma [batch_size, seq_len, embedding_dim]
-        x = x + self.pe[:, :x.size(1)]
-        return x
+        return x + self.pe[:, :x.size(1)]
 
 
 class SmilesEmbedding(nn.Module):
-    """
-    Módulo completo que combina o embedding de tokens e a codificação posicional.
-    """
+    """Módulo completo que combina o embedding de tokens e a codificação posicional."""
     def __init__(self, vocab_size, d_model, max_len):
         super().__init__()
         self.token_embedding = nn.Embedding(vocab_size, d_model)
@@ -73,7 +73,7 @@ class SmilesEmbedding(nn.Module):
         self.d_model = d_model
 
     def forward(self, x):
-        # x tem a forma [batch_size, seq_len]
         x = self.token_embedding(x) * math.sqrt(self.d_model)
         x = self.positional_encoding(x)
         return x
+
