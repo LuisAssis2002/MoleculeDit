@@ -1,6 +1,6 @@
 torch
 numpy
 pandas
-rdkit-pypi
+rdkit
 matplotlib
 timm
