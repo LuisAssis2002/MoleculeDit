@@ -2,4 +2,4 @@ vina
 AutoDock-Vina-1.2.7
 .gitignore
 .token
-poc_results_melhorado/final_model_epoch_150.pt
+final_model_epoch_150.pt
