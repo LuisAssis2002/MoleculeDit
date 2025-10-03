@@ -5,7 +5,7 @@ import math
 class SmilesTokenizer:
     """
     Classe para tokenizar e de-tokenizar strings SMILES.
-    Versão 3.0: Constrói o vocabulário dinamicamente a partir dos dados.
+    Versão robusta: Constrói o vocabulário dinamicamente a partir dos dados.
     """
     def __init__(self):
         self.vocab = []
@@ -28,12 +28,12 @@ class SmilesTokenizer:
         self.idx_to_char = {i: char for i, char in enumerate(self.vocab)}
         
         self.vocab_size = len(self.vocab)
-        print(f"Vocabulário construído com {self.vocab_size} tokens a partir dos dados.")
+        print(f"Vocabulário construído dinamicamente com {self.vocab_size} tokens.")
 
     def encode(self, smiles):
         """Converte uma string SMILES numa lista de tokens inteiros."""
         tokens = [self.char_to_idx["<start>"]]
-        tokens.extend([self.char_to_idx.get(char, 0) for char in smiles])
+        tokens.extend([self.char_to_idx.get(char, self.char_to_idx["<pad>"]) for char in smiles])
         tokens.append(self.char_to_idx["<end>"])
         return tokens
 
@@ -76,4 +76,3 @@ class SmilesEmbedding(nn.Module):
         x = self.token_embedding(x) * math.sqrt(self.d_model)
         x = self.positional_encoding(x)
         return x
-
